@@ -29,6 +29,24 @@ under the License.
 
     <dependencies>
         <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>${rs-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+            <version>${cdi-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.json.bind</groupId>
+            <artifactId>javax.json.bind-api</artifactId>
+            <version>${bind-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
@@ -108,4 +126,10 @@ under the License.
             </plugin>
         </plugins>
     </build>
+
+    <properties>
+        <rs-api.version>2.1</rs-api.version>
+        <cdi-api.version>2.0</cdi-api.version>
+        <bind-api.version>1.0</bind-api.version>
+    </properties>
 </project>

@@ -172,7 +172,7 @@ public class GraphqlTestCase extends APIMIntegrationBaseTest {
     public void testInvokeGraphqlAPIUsingJWTApplication() throws Exception {
         String graphqlJwtAppName = "CountriesJWTAPP";
         testAppId1 = createGraphqlAppAndSubscribeToAPI(graphqlJwtAppName, "JWT");
-
+er
         // generate token
         ArrayList<String> grantTypes = new ArrayList<>();
         grantTypes.add(APIMIntegrationConstants.GRANT_TYPE.CLIENT_CREDENTIAL);
