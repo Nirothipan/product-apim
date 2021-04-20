@@ -53,6 +53,8 @@ import org.wso2.am.integration.test.utils.bean.APILifeCycleAction;
 import org.wso2.am.integration.test.utils.bean.APIRequest;
 import org.wso2.am.integration.test.utils.generic.APIMTestCaseUtils;
 import org.wso2.am.integration.test.utils.token.TokenUtils;
+import org.wso2.am.integration.tests.api.lifecycle.APIManagerConfigurationChangeTest;
+import org.wso2.am.integration.tests.oas.OASTestCase;
 import org.wso2.am.integration.tests.streamingapis.StreamingApiTestUtils;
 import org.wso2.am.integration.tests.streamingapis.serversentevents.client.SimpleSseReceiver;
 import org.wso2.am.integration.tests.streamingapis.serversentevents.server.SseServlet;
@@ -127,6 +129,51 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
                 new Object[] { TestUserMode.SUPER_TENANT_ADMIN },
                 new Object[] { TestUserMode.TENANT_ADMIN }
         };
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        String basePath = "/home/nirothipan/Desktop/integrationRepos/product-apim/modules/distribution/product/target"
+                + "/wso2am-4.0.0-SNAPSHOT/";
+
+        String carbonHome = "/home/nirothipan/Desktop/integrationRepos/product-apim/modules/distribution/product/target"
+                + "/wso2am-4.0.0-SNAPSHOT";
+
+        System.setProperty("carbon.home", carbonHome );
+
+        System.setProperty("javax.net.ssl.keyStore", basePath +
+                           "repository/resources/security/wso2carbon.jks");
+        System.setProperty("javax.net.ssl.trustStore", basePath +
+                           "repository/resources/security/client-truststore.jks");
+        System.setProperty("javax.net.ssl.keyStorePassword", "wso2carbon");
+
+        String integrationPath = "/home/nirothipan/Desktop/integrationRepos/product-apim/modules/integration/tests"
+                + "-integration/tests-backend/";
+        System.setProperty("framework.resource.location", integrationPath + "src/test/resources/");
+        System.setProperty("user.dir", integrationPath +
+                           "src");
+        APIManagerConfigurationChangeTest con = new APIManagerConfigurationChangeTest();
+        con.configureEnvironment();
+
+//        OASTestCase aCase = new OASTestCase(TestUserMode.SUPER_TENANT_ADMIN, "v3");
+//        aCase.init();
+//        aCase.setEnvironment();
+
+//        try {
+//            aCase.testNewAPI();
+//            aCase.testAPIUpdate();
+//            aCase.testAPIDefinitionUpdate();
+//            aCase.testAPIDefinitionImport();
+//        } finally {
+//            aCase.destroy();
+//        }
+
+        ServerSentEventsAPITestCase serverSentEventsAPITestCase = new ServerSentEventsAPITestCase(TestUserMode.SUPER_TENANT_ADMIN);
+        serverSentEventsAPITestCase.setEnvironment();
+        serverSentEventsAPITestCase.testPublishSseApi();
+        serverSentEventsAPITestCase.destroy();
+
+
     }
 
     @BeforeClass(alwaysRun = true)

@@ -95,136 +95,136 @@ public class APIManagerConfigurationChangeTest extends APIManagerLifecycleBaseTe
 
         String gatewayMgtSessionId = createSession(gatewayContextMgt);
 
-        webAppAdminClient = new WebAppAdminClient(
-                gatewayContextMgt.getContextUrls().getBackEndUrl(), gatewayMgtSessionId);
-
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.JAXRS_BASIC_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP1_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP2_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP3_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP1_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP2_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP3_WEB_APP_NAME + ".war");
-        webAppAdminClient
-                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.WILDCARD_WEB_APP_NAME + ".war");
-        webAppAdminClient.uploadWarFile(APIStatusMonitorWebAppSourcePath);
-        webAppAdminClient.uploadWarFile(GraphqlAPIWebAppSourcePath);
-        webAppAdminClient.uploadWarFile(AuditAPIWebAppSourcePath);
-        String sourcePath = org.wso2.am.integration.test.utils.generic.TestConfigurationProvider.getResourceLocation()
-                + File.separator + "artifacts" + File.separator + "AM" + File.separator + "war" + File.separator
-                + APIMIntegrationConstants.ETCD_WEB_APP_NAME + ".war";
-        webAppAdminClient.uploadWarFile(sourcePath);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.JAXRS_BASIC_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP1_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP2_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP3_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP1_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP2_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP3_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.WILDCARD_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.AM_MONITORING_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.GRAPHQL_API_WEB_APP_NAME);
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.AUDIT_API_WEB_APP_NAME);
-        WebAppDeploymentUtil.isMonitoringAppDeployed(gatewayContextWrk.getContextUrls().getWebAppURL());
-        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
-                gatewayMgtSessionId, APIMIntegrationConstants.ETCD_WEB_APP_NAME);
-        log.info("Web App Deployed");
-        String gatewaySessionCookie = createSession(gatewayContextMgt);
-        if (TestUserMode.SUPER_TENANT_ADMIN == userMode) {
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "version1.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "version2.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "sequence" + File.separator +
-                            "xml_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy-api-multiResourceSameVerb.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy-api-resourceWithSpecialCharacters.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
-                    + "synapseconfigs" + File.separator + "rest" + File.separator
-                    + "jwt_backend.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
-                            + "synapseconfigs" + File.separator + "rest" + File.separator + "jwt_backend.xml",
-                    gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy_api_APIMANAGER-4464.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy_digest_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "error" + File.separator + "handle"
-                    + File.separator + "error-handling-test-synapse.xml", gatewayContextWrk, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "error_response_check_dummy_api.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "rest"
-                    + File.separator + "git2231_head_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" +
-                            File.separator + "rest" + File.separator + "dummy_api_APIMANAGER-4312.xml",
-                    gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy_patch_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
-                            + "synapseconfigs" + File.separator + "rest" + File.separator + "api_throttle_backend.xml",
-                    gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator +
-                    "synapseconfigs" + File.separator + "throttling" + File.separator +
-                    "dummy-stockquote.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath(
-                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest" +
-                            File.separator + "APIResourceWithTemplateTestCaseAPI.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "scriptmediator"
-                    + File.separator + "script_mediator_api.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                            + File.separator + "synapseconfigs" + File.separator + "rest"
-                            + File.separator + "dummy_api_relative_url_loc_header.xml", gatewayContextMgt,
-                    gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "rest"
-                    + File.separator + "dummy_api_loc_header.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "rest"
-                    + File.separator + "JWKS-Backend.xml", gatewayContextMgt, gatewaySessionCookie);
-            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
-                    + File.separator + "synapseconfigs" + File.separator + "rest"
-                    + File.separator + "BackEndSecurity.xml", gatewayContextMgt, gatewaySessionCookie);
-        }
+//        webAppAdminClient = new WebAppAdminClient(
+//                gatewayContextMgt.getContextUrls().getBackEndUrl(), gatewayMgtSessionId);
+//
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.JAXRS_BASIC_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP1_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP2_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.PRODEP3_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP1_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP2_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.SANDBOXEP3_WEB_APP_NAME + ".war");
+//        webAppAdminClient
+//                .uploadWarFile(testArtifactWarFilePath + APIMIntegrationConstants.WILDCARD_WEB_APP_NAME + ".war");
+//        webAppAdminClient.uploadWarFile(APIStatusMonitorWebAppSourcePath);
+//        webAppAdminClient.uploadWarFile(GraphqlAPIWebAppSourcePath);
+//        webAppAdminClient.uploadWarFile(AuditAPIWebAppSourcePath);
+//        String sourcePath = org.wso2.am.integration.test.utils.generic.TestConfigurationProvider.getResourceLocation()
+//                + File.separator + "artifacts" + File.separator + "AM" + File.separator + "war" + File.separator
+//                + APIMIntegrationConstants.ETCD_WEB_APP_NAME + ".war";
+//        webAppAdminClient.uploadWarFile(sourcePath);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.JAXRS_BASIC_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP1_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP2_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.PRODEP3_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP1_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP2_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.SANDBOXEP3_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.WILDCARD_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.AM_MONITORING_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.GRAPHQL_API_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.AUDIT_API_WEB_APP_NAME);
+//        WebAppDeploymentUtil.isMonitoringAppDeployed(gatewayContextWrk.getContextUrls().getWebAppURL());
+//        WebAppDeploymentUtil.isWebApplicationDeployed(gatewayContextMgt.getContextUrls().getBackEndUrl(),
+//                gatewayMgtSessionId, APIMIntegrationConstants.ETCD_WEB_APP_NAME);
+//        log.info("Web App Deployed");
+//        String gatewaySessionCookie = createSession(gatewayContextMgt);
+//        if (TestUserMode.SUPER_TENANT_ADMIN == userMode) {
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "version1.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "version2.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "sequence" + File.separator +
+//                            "xml_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy-api-multiResourceSameVerb.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy-api-resourceWithSpecialCharacters.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
+//                    + "synapseconfigs" + File.separator + "rest" + File.separator
+//                    + "jwt_backend.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
+//                            + "synapseconfigs" + File.separator + "rest" + File.separator + "jwt_backend.xml",
+//                    gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy_api_APIMANAGER-4464.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy_digest_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "error" + File.separator + "handle"
+//                    + File.separator + "error-handling-test-synapse.xml", gatewayContextWrk, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "error_response_check_dummy_api.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "rest"
+//                    + File.separator + "git2231_head_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" +
+//                            File.separator + "rest" + File.separator + "dummy_api_APIMANAGER-4312.xml",
+//                    gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy_patch_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator
+//                            + "synapseconfigs" + File.separator + "rest" + File.separator + "api_throttle_backend.xml",
+//                    gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM" + File.separator +
+//                    "synapseconfigs" + File.separator + "throttling" + File.separator +
+//                    "dummy-stockquote.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath(
+//                    "artifacts" + File.separator + "AM" + File.separator + "synapseconfigs" + File.separator + "rest" +
+//                            File.separator + "APIResourceWithTemplateTestCaseAPI.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "scriptmediator"
+//                    + File.separator + "script_mediator_api.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                            + File.separator + "synapseconfigs" + File.separator + "rest"
+//                            + File.separator + "dummy_api_relative_url_loc_header.xml", gatewayContextMgt,
+//                    gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "rest"
+//                    + File.separator + "dummy_api_loc_header.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "rest"
+//                    + File.separator + "JWKS-Backend.xml", gatewayContextMgt, gatewaySessionCookie);
+//            loadSynapseConfigurationFromClasspath("artifacts" + File.separator + "AM"
+//                    + File.separator + "synapseconfigs" + File.separator + "rest"
+//                    + File.separator + "BackEndSecurity.xml", gatewayContextMgt, gatewaySessionCookie);
+//        }
     }
 }
