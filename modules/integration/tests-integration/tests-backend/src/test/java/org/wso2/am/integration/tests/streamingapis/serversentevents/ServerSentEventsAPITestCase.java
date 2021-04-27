@@ -45,31 +45,33 @@ import org.wso2.am.integration.clients.store.api.v1.dto.ApplicationKeyDTO;
 import org.wso2.am.integration.clients.store.api.v1.dto.ApplicationKeyGenerateRequestDTO;
 import org.wso2.am.integration.clients.store.api.v1.dto.SubscriptionDTO;
 import org.wso2.am.integration.clients.store.api.v1.dto.TopicListDTO;
+import org.wso2.am.integration.test.ClientAuthenticator;
 import org.wso2.am.integration.test.impl.DtoFactory;
+import org.wso2.am.integration.test.impl.RestAPIAdminImpl;
+import org.wso2.am.integration.test.impl.RestAPIPublisherImpl;
+import org.wso2.am.integration.test.impl.RestAPIStoreImpl;
 import org.wso2.am.integration.test.utils.APIManagerIntegrationTestException;
 import org.wso2.am.integration.test.utils.base.APIMIntegrationBaseTest;
 import org.wso2.am.integration.test.utils.base.APIMIntegrationConstants;
 import org.wso2.am.integration.test.utils.bean.APILifeCycleAction;
+import org.wso2.am.integration.test.utils.bean.APIMURLBean;
 import org.wso2.am.integration.test.utils.bean.APIRequest;
+import org.wso2.am.integration.test.utils.bean.DCRParamRequest;
 import org.wso2.am.integration.test.utils.generic.APIMTestCaseUtils;
 import org.wso2.am.integration.test.utils.token.TokenUtils;
-import org.wso2.am.integration.tests.api.lifecycle.APIManagerConfigurationChangeTest;
-import org.wso2.am.integration.tests.oas.OASTestCase;
 import org.wso2.am.integration.tests.streamingapis.StreamingApiTestUtils;
 import org.wso2.am.integration.tests.streamingapis.serversentevents.client.SimpleSseReceiver;
 import org.wso2.am.integration.tests.streamingapis.serversentevents.server.SseServlet;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.automation.engine.annotations.ExecutionEnvironment;
 import org.wso2.carbon.automation.engine.annotations.SetEnvironment;
+import org.wso2.carbon.automation.engine.context.AutomationContext;
 import org.wso2.carbon.automation.engine.context.TestUserMode;
 import org.wso2.carbon.automation.engine.frameworkutils.FrameworkPathUtil;
 import org.wso2.carbon.automation.test.utils.common.TestConfigurationProvider;
 import org.wso2.carbon.automation.test.utils.http.client.HttpResponse;
 import org.wso2.carbon.integration.common.utils.mgt.ServerConfigurationManager;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -80,33 +82,31 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-@SetEnvironment(executionEnvironments = {ExecutionEnvironment.STANDALONE})
+@SetEnvironment(executionEnvironments = { ExecutionEnvironment.STANDALONE })
 public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
 
     private final Log log = LogFactory.getLog(ServerSentEventsAPITestCase.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    private String sseEventPublisherSource = TestConfigurationProvider.getResourceLocation() + File.separator +
-            "artifacts" + File.separator + "AM" + File.separator + "configFiles" + File.separator + "streamingAPIs" +
-            File.separator + "serverSentEventsTest" + File.separator;
-    private String sseRequestEventPublisherSource = "SSE_Req_Logger.xml";
-    private String sseThrottleOutEventPublisherSource = "SSE_Throttle_Out_Logger.xml";
-    private String sseEventPublisherTarget = FrameworkPathUtil.getCarbonHome() + File.separator + "repository" +
-            File.separator + "deployment" + File.separator + "server" + File.separator + "eventpublishers" +
-            File.separator;
-
-    private String apiName = "SSEAPI";
-    private String applicationName = "SSEApplication";
+    private String sseEventPublisherSource =
+            TestConfigurationProvider.getResourceLocation() + File.separator + "artifacts" + File.separator + "AM"
+                    + File.separator + "configFiles" + File.separator + "streamingAPIs" + File.separator
+                    + "serverSentEventsTest" + File.separator;
+    private String sseEventPublisherTarget =
+            FrameworkPathUtil.getCarbonHome() + File.separator + "repository" + File.separator + "deployment"
+                    + File.separator + "server" + File.separator + "eventpublishers" + File.separator;
 
     private ServerConfigurationManager serverConfigurationManager;
-    private String provider;
-    private APIRequest apiRequest;
     private int sseServerPort;
     private String sseServerHost;
     private String apiId;
@@ -125,10 +125,8 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
 
     @DataProvider
     public static Object[][] userModeDataProvider() {
-        return new Object[][]{
-                new Object[] { TestUserMode.SUPER_TENANT_ADMIN },
-                new Object[] { TestUserMode.TENANT_ADMIN }
-        };
+        return new Object[][] { new Object[] { TestUserMode.SUPER_TENANT_ADMIN },
+                new Object[] { TestUserMode.TENANT_ADMIN } };
     }
 
     public static void main(String[] args) throws Exception {
@@ -139,40 +137,74 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
         String carbonHome = "/home/nirothipan/Desktop/integrationRepos/product-apim/modules/distribution/product/target"
                 + "/wso2am-4.0.0-SNAPSHOT";
 
-        System.setProperty("carbon.home", carbonHome );
-
-        System.setProperty("javax.net.ssl.keyStore", basePath +
-                           "repository/resources/security/wso2carbon.jks");
-        System.setProperty("javax.net.ssl.trustStore", basePath +
-                           "repository/resources/security/client-truststore.jks");
-        System.setProperty("javax.net.ssl.keyStorePassword", "wso2carbon");
-
         String integrationPath = "/home/nirothipan/Desktop/integrationRepos/product-apim/modules/integration/tests"
                 + "-integration/tests-backend/";
+
+        System.setProperty("javax.net.ssl.keyStore", basePath + "repository/resources/security/wso2carbon.jks");
+        System.setProperty("javax.net.ssl.trustStore",
+                           basePath + "repository/resources/security/client-truststore" + ".jks");
+        System.setProperty("javax.net.ssl.keyStorePassword", "wso2carbon");
+
+        System.setProperty("carbon.home", carbonHome);
+
         System.setProperty("framework.resource.location", integrationPath + "src/test/resources/");
-        System.setProperty("user.dir", integrationPath +
-                           "src");
-        APIManagerConfigurationChangeTest con = new APIManagerConfigurationChangeTest();
-        con.configureEnvironment();
+        System.setProperty("user.dir", integrationPath + "src");
 
-//        OASTestCase aCase = new OASTestCase(TestUserMode.SUPER_TENANT_ADMIN, "v3");
-//        aCase.init();
-//        aCase.setEnvironment();
+        ServerSentEventsAPITestCase aCase = new ServerSentEventsAPITestCase(TestUserMode.SUPER_TENANT_ADMIN);
+        aCase.userMode = TestUserMode.SUPER_TENANT_ADMIN;
 
-//        try {
-//            aCase.testNewAPI();
-//            aCase.testAPIUpdate();
-//            aCase.testAPIDefinitionUpdate();
-//            aCase.testAPIDefinitionImport();
-//        } finally {
-//            aCase.destroy();
-//        }
+        //DCR call for publisher app
+        AutomationContext gatewayContextMgt = new AutomationContext(APIMIntegrationConstants.AM_PRODUCT_GROUP_NAME,
+                                                                    APIMIntegrationConstants.AM_GATEWAY_MGT_INSTANCE,
+                                                                    TestUserMode.SUPER_TENANT_ADMIN);
+        APIMURLBean gatewayUrlsMgt = new APIMURLBean(gatewayContextMgt.getContextUrls());
 
-        ServerSentEventsAPITestCase serverSentEventsAPITestCase = new ServerSentEventsAPITestCase(TestUserMode.SUPER_TENANT_ADMIN);
-        serverSentEventsAPITestCase.setEnvironment();
-        serverSentEventsAPITestCase.testPublishSseApi();
-        serverSentEventsAPITestCase.destroy();
+        String dcrURL = gatewayUrlsMgt.getWebAppURLHttps() + "client-registration/v0.17/register";
 
+        //DCR call for publisher app
+        DCRParamRequest publisherParamRequest = new DCRParamRequest(RestAPIPublisherImpl.appName,
+                                                                    RestAPIPublisherImpl.callBackURL,
+                                                                    RestAPIPublisherImpl.tokenScope,
+                                                                    RestAPIPublisherImpl.appOwner,
+                                                                    RestAPIPublisherImpl.grantType, dcrURL,
+                                                                    RestAPIPublisherImpl.username,
+                                                                    RestAPIPublisherImpl.password,
+                                                                    APIMIntegrationConstants.SUPER_TENANT_DOMAIN);
+        ClientAuthenticator.makeDCRRequest(publisherParamRequest);
+
+        //DCR call for dev portal app
+        DCRParamRequest devPortalParamRequest = new DCRParamRequest(RestAPIStoreImpl.appName,
+                                                                    RestAPIStoreImpl.callBackURL,
+                                                                    RestAPIStoreImpl.tokenScope,
+                                                                    RestAPIStoreImpl.appOwner,
+                                                                    RestAPIStoreImpl.grantType, dcrURL,
+                                                                    RestAPIStoreImpl.username,
+                                                                    RestAPIStoreImpl.password,
+                                                                    APIMIntegrationConstants.SUPER_TENANT_DOMAIN);
+        ClientAuthenticator.makeDCRRequest(devPortalParamRequest);
+        DCRParamRequest adminPortalParamRequest = new DCRParamRequest(RestAPIAdminImpl.appName,
+                                                                      RestAPIAdminImpl.callBackURL,
+                                                                      RestAPIAdminImpl.tokenScope,
+                                                                      RestAPIAdminImpl.appOwner,
+                                                                      RestAPIAdminImpl.grantType, dcrURL,
+                                                                      RestAPIAdminImpl.username,
+                                                                      RestAPIAdminImpl.password,
+                                                                      APIMIntegrationConstants.SUPER_TENANT_DOMAIN);
+        ClientAuthenticator.makeDCRRequest(adminPortalParamRequest);
+
+        aCase.setEnvironment();
+
+        try {
+            aCase.testPublishSseApi();
+            aCase.testSseApiApplicationSubscription();
+            aCase.testInvokeSseApi();
+            aCase.testTopicRetrievalOfSSEApi();
+            aCase.testSseApiThrottling();
+        } catch (Exception error) {
+            System.out.println(error);
+        } finally {
+            aCase.destroy();
+        }
 
     }
 
@@ -180,19 +212,21 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
     public void setEnvironment() throws Exception {
         super.init(userMode);
         serverConfigurationManager = new ServerConfigurationManager(gatewayContextWrk);
-        serverConfigurationManager.applyConfigurationWithoutRestart
-                (new File(sseEventPublisherSource + sseRequestEventPublisherSource),
-                        new File(sseEventPublisherTarget + sseRequestEventPublisherSource), false);
-        serverConfigurationManager.applyConfigurationWithoutRestart
-                (new File(sseEventPublisherSource + sseThrottleOutEventPublisherSource),
-                        new File(sseEventPublisherTarget + sseThrottleOutEventPublisherSource), false);
+        String sseRequestEventPublisherSource = "SSE_Req_Logger.xml";
+        serverConfigurationManager.applyConfigurationWithoutRestart(
+                new File(sseEventPublisherSource + sseRequestEventPublisherSource),
+                new File(sseEventPublisherTarget + sseRequestEventPublisherSource), false);
+        String sseThrottleOutEventPublisherSource = "SSE_Throttle_Out_Logger.xml";
+        serverConfigurationManager.applyConfigurationWithoutRestart(
+                new File(sseEventPublisherSource + sseThrottleOutEventPublisherSource),
+                new File(sseEventPublisherTarget + sseThrottleOutEventPublisherSource), false);
         sseServerHost = InetAddress.getLocalHost().getHostName();
         int lowerPortLimit = 8080;
         int upperPortLimit = 8090;
         sseServerPort = StreamingApiTestUtils.getAvailablePort(lowerPortLimit, upperPortLimit, sseServerHost);
         if (sseServerPort == -1) {
-            throw new APIManagerIntegrationTestException("No available port in the range " + lowerPortLimit + "-" +
-                    upperPortLimit + " was found");
+            throw new APIManagerIntegrationTestException(
+                    "No available port in the range " + lowerPortLimit + "-" + upperPortLimit + " was found");
         }
         log.info("Selected port " + sseServerPort + " to start backend server");
         initializeSseServer(sseServerPort);
@@ -200,14 +234,15 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
 
     @Test(description = "Publish SSE API")
     public void testPublishSseApi() throws Exception {
-        provider = user.getUserName();
+
+        String provider = user.getUserName();
         String apiContext = "sse";
         String apiVersion = "1.0.0";
-
         URI endpointUri = new URI("http://" + sseServerHost + ":" + sseServerPort);
 
         //Create the api creation request object
-        apiRequest = new APIRequest(apiName, apiContext, endpointUri, endpointUri);
+        String apiName = "SSEAPI";
+        APIRequest apiRequest = new APIRequest(apiName, apiContext, endpointUri, endpointUri);
         apiRequest.setVersion(apiVersion);
         apiRequest.setTiersCollection(APIMIntegrationConstants.API_TIER.ASYNC_UNLIMITED);
         apiRequest.setProvider(provider);
@@ -228,7 +263,7 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
 
         APIListDTO apiPublisherAllAPIs = restAPIPublisher.getAllAPIs();
         assertTrue(APIMTestCaseUtils.isAPIAvailable(apiIdentifier, apiPublisherAllAPIs),
-                "Published API is visible in API Publisher.");
+                   "Published API is not visible in API Publisher.");
         org.wso2.am.integration.clients.store.api.v1.dto.APIListDTO restAPIStoreAllAPIs;
         if (TestUserMode.SUPER_TENANT_ADMIN == userMode) {
             restAPIStoreAllAPIs = restAPIStore.getAllAPIs();
@@ -236,37 +271,44 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
             restAPIStoreAllAPIs = restAPIStore.getAllAPIs(user.getUserDomain());
         }
         assertTrue(APIMTestCaseUtils.isAPIAvailableInStore(apiIdentifier, restAPIStoreAllAPIs),
-                "Published API is visible in API Store.");
+                   "Published API is not visible in API Store.");
+        System.out.println("Test case testPublishSseApi passed");
     }
 
-    @Test(description = "Create Application and subscribe", dependsOnMethods = "testPublishSseApi")
+    @Test(description = "Create Application and subscribe",
+            dependsOnMethods = "testPublishSseApi")
     public void testSseApiApplicationSubscription() throws Exception {
-        HttpResponse applicationResponse = restAPIStore.createApplication(applicationName,
-                "", APIMIntegrationConstants.API_TIER.UNLIMITED, ApplicationDTO.TokenTypeEnum.OAUTH);
+        String applicationName = "SSEApplication";
+        HttpResponse applicationResponse = restAPIStore.createApplication(applicationName, "",
+                                                                          APIMIntegrationConstants.API_TIER.UNLIMITED,
+                                                                          ApplicationDTO.TokenTypeEnum.OAUTH);
         appId = applicationResponse.getData();
         SubscriptionDTO subscriptionDTO = restAPIStore.subscribeToAPI(apiId, appId,
-                APIMIntegrationConstants.API_TIER.ASYNC_UNLIMITED);
+                                                                      APIMIntegrationConstants.API_TIER.ASYNC_UNLIMITED);
         // Validate Subscription of the API
         Assert.assertEquals(subscriptionDTO.getStatus(), SubscriptionDTO.StatusEnum.UNBLOCKED);
     }
 
-    @Test(description = "check for topics of a SSE api", dependsOnMethods = "testSseApiApplicationSubscription")
-    public void testTopicRetrievalofSSEApi() throws  Exception {
+    @Test(description = "check for topics of a SSE api",
+            dependsOnMethods = "testSseApiApplicationSubscription")
+    public void testTopicRetrievalOfSSEApi() {
         HttpResponse topicResponse = restAPIStore.getTopics(apiId, user.getUserDomain());
         Gson g = new Gson();
         TopicListDTO topicListDTO = g.fromJson(topicResponse.getData(), TopicListDTO.class);
-        Assert.assertEquals(topicListDTO.getCount().intValue(), 1);
+        Assert.assertEquals(topicListDTO.getCount().intValue(), 1, "Topic not found.");
 
     }
 
-    @Test(description = "Invoke SSE API", dependsOnMethods = "testSseApiApplicationSubscription")
+    @Test(description = "Invoke SSE API",
+            dependsOnMethods = "testSseApiApplicationSubscription")
     public void testInvokeSseApi() throws Exception {
         ArrayList grantTypes = new ArrayList();
         grantTypes.add(APIMIntegrationConstants.GRANT_TYPE.PASSWORD);
         grantTypes.add(APIMIntegrationConstants.GRANT_TYPE.REFRESH_CODE);
         grantTypes.add(APIMIntegrationConstants.GRANT_TYPE.CLIENT_CREDENTIAL);
         ApplicationKeyDTO applicationKeyDTO = restAPIStore.generateKeys(appId, "3600", null,
-                ApplicationKeyGenerateRequestDTO.KeyTypeEnum.PRODUCTION, null, grantTypes);
+                                                                        ApplicationKeyGenerateRequestDTO.KeyTypeEnum.PRODUCTION,
+                                                                        null, grantTypes);
         String accessToken = applicationKeyDTO.getToken().getAccessToken();
         consumerKey = applicationKeyDTO.getConsumerKey();
         consumerSecret = applicationKeyDTO.getConsumerSecret();
@@ -281,77 +323,88 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
         sseReceiver.setReceivedDataEventsCount(0);
     }
 
+    @Test(dependsOnMethods = { "testPublishSseApi", "testInvokeSseApi" })
     public void testSseApiThrottling() throws Exception {
-        InputStream inputStream = new FileInputStream(getAMResourceLocation() + File.separator +
-                "configFiles" + File.separator + "streamingAPIs" + File.separator + "serverSentEventsTest" +
-                File.separator + "policy.json");
 
-        // Extract the field values from the input stream
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonMap = mapper.readTree(inputStream);
-        String policyName = jsonMap.get("policyName").textValue();
-        String policyDescription = jsonMap.get("policyDescription").textValue();
-        JsonNode defaultLimitJson = jsonMap.get("defaultLimit");
-        JsonNode requestCountJson = defaultLimitJson.get("requestCount");
-        Long requestCountLimit = Long.valueOf(String.valueOf(requestCountJson.get("requestCount")));
-        String timeUnit = requestCountJson.get("timeUnit").textValue();
-        Integer unitTime = Integer.valueOf(String.valueOf(requestCountJson.get("unitTime")));
+        String apiPolicyId = "";
+        APIDTO apidto = null;
+        try {
+            InputStream inputStream = new FileInputStream(
+                    getAMResourceLocation() + File.separator + "configFiles" + File.separator + "streamingAPIs"
+                            + File.separator + "serverSentEventsTest" + File.separator + "policy.json");
 
-        // Create the advanced throttling policy with request count quota type
-        EventCountLimitDTO eventCountLimitDTO = DtoFactory.createEventCountLimitDTO(timeUnit, unitTime,
-                requestCountLimit);
-        ThrottleLimitDTO defaultLimit = DtoFactory.createEventCountThrottleLimitDTO(eventCountLimitDTO);
-        AdvancedThrottlePolicyDTO advancedPolicyDTO = DtoFactory
-                .createAdvancedThrottlePolicyDTO(policyName, "", policyDescription, false, defaultLimit,
-                        new ArrayList<>());
+            // Extract the field values from the input stream
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonMap = mapper.readTree(inputStream);
+            String policyName = jsonMap.get("policyName").textValue();
+            String policyDescription = jsonMap.get("policyDescription").textValue();
+            JsonNode defaultLimitJson = jsonMap.get("defaultLimit");
+            JsonNode requestCountJson = defaultLimitJson.get("requestCount");
+            Long requestCountLimit = Long.valueOf(String.valueOf(requestCountJson.get("requestCount")));
+            String timeUnit = requestCountJson.get("timeUnit").textValue();
+            Integer unitTime = Integer.valueOf(String.valueOf(requestCountJson.get("unitTime")));
 
-        // Add the advanced throttling policy
-        ApiResponse<AdvancedThrottlePolicyDTO> addedPolicy =
-                restAPIAdmin.addAdvancedThrottlingPolicy(advancedPolicyDTO);
-        // Assert the status code and policy ID
-        Assert.assertEquals(addedPolicy.getStatusCode(), HttpStatus.SC_CREATED);
-        AdvancedThrottlePolicyDTO addedAdvancedPolicyDTO = addedPolicy.getData();
-        String apiPolicyId = addedAdvancedPolicyDTO.getPolicyId();
-        Assert.assertNotNull(apiPolicyId, "The policy ID cannot be null or empty");
+            // Create the advanced throttling policy with request count quota type
+            EventCountLimitDTO eventCountLimitDTO = DtoFactory.createEventCountLimitDTO(timeUnit, unitTime,
+                                                                                        requestCountLimit);
+            ThrottleLimitDTO defaultLimit = DtoFactory.createEventCountThrottleLimitDTO(eventCountLimitDTO);
+            AdvancedThrottlePolicyDTO advancedPolicyDTO = DtoFactory.createAdvancedThrottlePolicyDTO(policyName, "",
+                                                                                                     policyDescription,
+                                                                                                     false,
+                                                                                                     defaultLimit,
+                                                                                                     new ArrayList<>());
 
-        // Update Throttling policy of the API
-        HttpResponse response = restAPIPublisher.getAPI(apiId);
-        Gson g = new Gson();
-        APIDTO apidto = g.fromJson(response.getData(), APIDTO.class);
-        apidto.setApiThrottlingPolicy("SSETestThrottlingPolicy");
-        APIDTO updatedAPI = restAPIPublisher.updateAPI(apidto);
-        Assert.assertEquals(updatedAPI.getApiThrottlingPolicy(), "SSETestThrottlingPolicy");
-        // Get an Access Token from the user who is logged into the API Store.
-        URL tokenEndpointURL = new URL(getKeyManagerURLHttps() + "/oauth2/token");
-        String subsAccessTokenPayload = APIMTestCaseUtils.getPayloadForPasswordGrant(user.getUserName(),
-                user.getPassword());
-        JSONObject subsAccessTokenGenerationResponse = new JSONObject(
-                apiStore.generateUserAccessKey(consumerKey, consumerSecret, subsAccessTokenPayload,
-                        tokenEndpointURL).getData());
+            // Add the advanced throttling policy
+            ApiResponse<AdvancedThrottlePolicyDTO> addedPolicy = restAPIAdmin.addAdvancedThrottlingPolicy(
+                    advancedPolicyDTO);
+            // Assert the status code and policy ID
+            Assert.assertEquals(addedPolicy.getStatusCode(), HttpStatus.SC_CREATED);
+            AdvancedThrottlePolicyDTO addedAdvancedPolicyDTO = addedPolicy.getData();
+            apiPolicyId = addedAdvancedPolicyDTO.getPolicyId();
+            Assert.assertNotNull(apiPolicyId, "The policy ID cannot be null or empty");
 
-        String subsRefreshToken = subsAccessTokenGenerationResponse.getString("refresh_token");
-        assertFalse(org.apache.commons.lang.StringUtils.isEmpty(subsRefreshToken),
-                "Refresh token of access token generated by subscriber is empty");
+            // Update Throttling policy of the API
+            HttpResponse response = restAPIPublisher.getAPI(apiId);
+            Gson g = new Gson();
+            apidto = g.fromJson(response.getData(), APIDTO.class);
+            apidto.setApiThrottlingPolicy("SSETestThrottlingPolicy");
+            APIDTO updatedAPI = restAPIPublisher.updateAPI(apidto);
+            Assert.assertEquals(updatedAPI.getApiThrottlingPolicy(), "SSETestThrottlingPolicy");
+            // Get an Access Token from the user who is logged into the API Store.
+            URL tokenEndpointURL = new URL(getKeyManagerURLHttps() + "/oauth2/token");
+            String subsAccessTokenPayload = APIMTestCaseUtils.getPayloadForPasswordGrant(user.getUserName(),
+                                                                                         user.getPassword());
+            //            JSONObject subsAccessTokenGenerationResponse = new JSONObject(
+            //                    apiStore.generateUserAccessKey(consumerKey, consumerSecret, subsAccessTokenPayload, tokenEndpointURL).getData());
 
-        // Obtain user access token
-        String requestBody = APIMTestCaseUtils.getPayloadForPasswordGrant(user.getUserName(), user.getPassword());
-        JSONObject accessTokenGenerationResponse = new JSONObject(
-                apiStore.generateUserAccessKey(consumerKey, consumerSecret, requestBody,
-                        tokenEndpointURL).getData());
+            //            String subsRefreshToken = subsAccessTokenGenerationResponse.getString("refresh_token");
+            //            assertFalse(org.apache.commons.lang.StringUtils.isEmpty(subsRefreshToken),
+            //                        "Refresh token of access token generated by subscriber is empty");
 
-        // Get Access Token and Refresh Token
-        String refreshToken = accessTokenGenerationResponse.getString("refresh_token");
-        String getAccessTokenFromRefreshTokenRequestBody =
-                "grant_type=refresh_token&refresh_token=" + refreshToken;
-        accessTokenGenerationResponse = new JSONObject(
-                apiStore.generateUserAccessKey(consumerKey, consumerSecret,
-                        getAccessTokenFromRefreshTokenRequestBody,
-                        tokenEndpointURL).getData());
-        String userAccessToken = accessTokenGenerationResponse.getString("access_token");
+            // Obtain user access token
+            String requestBody = APIMTestCaseUtils.getPayloadForPasswordGrant(user.getUserName(), user.getPassword());
+            JSONObject accessTokenGenerationResponse = new JSONObject(
+                    apiStore.generateUserAccessKey(consumerKey, consumerSecret, requestBody, tokenEndpointURL)
+                            .getData());
 
-        Assert.assertNotNull("Access Token not found " + accessTokenGenerationResponse, userAccessToken);
-        String tokenJti = TokenUtils.getJtiOfJwtToken(userAccessToken);
-        testThrottling(tokenJti);
+            // Get Access Token and Refresh Token
+            String refreshToken = accessTokenGenerationResponse.getString("refresh_token");
+            String getAccessTokenFromRefreshTokenRequestBody = "grant_type=refresh_token&refresh_token=" + refreshToken;
+            accessTokenGenerationResponse = new JSONObject(apiStore.generateUserAccessKey(consumerKey, consumerSecret,
+                                                                                          getAccessTokenFromRefreshTokenRequestBody,
+                                                                                          tokenEndpointURL).getData());
+            String userAccessToken = accessTokenGenerationResponse.getString("access_token");
+            String tokenJti = TokenUtils.getJtiOfJwtToken(userAccessToken);
+            testThrottling(tokenJti);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        } finally {
+            if (apidto != null) {
+                apidto.setApiThrottlingPolicy("");
+                restAPIPublisher.updateAPI(apidto);
+                restAPIAdmin.deleteAdvancedThrottlingPolicy(apiPolicyId);
+            }
+        }
     }
 
     private void testThrottling(String accessToken) throws Exception {
@@ -374,19 +427,30 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
                 isThrottled.set(aBoolean);
             }
         });
-        Thread.sleep(3000L);
-        Assert.assertTrue(isThrottled.get());
+        Assert.assertTrue(waitTill(isThrottled::get, 180), "Requests are not throttled.");
+        System.out.println("Throttling test case passed");
+    }
+
+    private boolean waitTill(BooleanSupplier predicate, int maxWaitTime) throws InterruptedException {
+        int count = 0;
+        while (count < maxWaitTime) {
+            if (predicate.getAsBoolean()) {
+                return true;
+            } else {
+                TimeUnit.SECONDS.sleep(1);
+                count++;
+            }
+        }
+        return false;
     }
 
     private void initializeSseServer(int port) {
         Server server = new Server(port);
         ServletHandler servletHandler = new ServletHandler();
         server.setHandler(servletHandler);
-
         sseServlet = new SseServlet();
         ServletHolder servletHolder = new ServletHolder(sseServlet);
         servletHandler.addServletWithMapping(servletHolder, "/memory");
-
         sseServer = server;
     }
 
@@ -397,18 +461,15 @@ public class ServerSentEventsAPITestCase extends APIMIntegrationBaseTest {
     }
 
     private void startAndStopSseServer(long stopAfterMillis) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    sseServer.start();
-                    log.info("SSE Server Started and will be stopped after: " + stopAfterMillis + "ms.");
-                    Thread.sleep(stopAfterMillis);
-                    sseServer.stop();
-                    log.info("SSE Server Stopped.");
-                } catch (Exception e) {
-                    log.error("Failed to start/stop the SSE server.", e);
-                }
+        executorService.execute(() -> {
+            try {
+                sseServer.start();
+                log.info("SSE Server Started and will be stopped after: " + stopAfterMillis + "ms.");
+                TimeUnit.MILLISECONDS.sleep(stopAfterMillis);
+                sseServer.stop();
+                log.info("SSE Server Stopped.");
+            } catch (Exception e) {
+                log.error("Failed to start/stop the SSE server.", e);
             }
         });
     }
